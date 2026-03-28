@@ -278,7 +278,7 @@
 // ═══════════════════════════════════════════════════════════
 //  ⚙️  BƯỚC DUY NHẤT CẦN THAY: dán URL Apps Script vào đây
 // ═══════════════════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbyWC87qz3TSyMbr4UOY74kDZNjDuMWrTzIfgvBwWL_SLMS1TL8-s0foRh9-UBDpalvWWw/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxB7Ju9q5y2Gs-XR1rdEe4vDTQQlZ2z_NSitbLWA5CTktAfIlgl5OiQqlc8AUeEwwN7Qw/exec';
 // Ví dụ: 'https://script.google.com/macros/s/AKfycbx.../exec'
 // ═══════════════════════════════════════════════════════════
 
@@ -300,16 +300,10 @@ function daysLeft(s){
   return Math.floor((d-t)/86400000);
 }
 
-// ── API calls ─────────────────────────────────────────────────
-async function apiGet() {
-  const res = await fetch(API_URL + '?action=getAll');
-  return res.json();
-}
-async function apiPost(body) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify(body)
-  });
+// ── API calls — dùng GET để tránh CORS ───────────────────────
+async function apiCall(params) {
+  const url = API_URL + '?' + new URLSearchParams(params).toString();
+  const res = await fetch(url);
   return res.json();
 }
 
@@ -329,7 +323,7 @@ async function loadAll() {
       showToast('⚠️ Chưa cấu hình API URL — xem hướng dẫn!');
       setLoading(false); return;
     }
-    const data = await apiGet();
+    const data = await apiCall({ action: 'getAll' });
     zoomSessions = (data.zoom  || []).sort((a,b) => a.date.localeCompare(b.date));
     tasks        = (data.tasks || []).sort((a,b) => a.deadline.localeCompare(b.deadline));
     renderZoomList(); renderTasks(); renderCalendar();
@@ -347,7 +341,7 @@ async function addZoom() {
   if (!date) { alert('Vui lòng chọn ngày học!'); return; }
   setLoading(true);
   try {
-    const res = await apiPost({ action:'addZoom', date, note: note||'Buổi học Zoom' });
+    const res = await apiCall({ action:'addZoom', date, note: note||'Buổi học Zoom' });
     if (res.success) {
       zoomSessions.push({ id: res.id, date, note: note||'Buổi học Zoom' });
       zoomSessions.sort((a,b) => a.date.localeCompare(b.date));
@@ -363,7 +357,7 @@ async function addZoom() {
 async function removeZoom(id) {
   setLoading(true);
   try {
-    await apiPost({ action:'deleteZoom', id });
+    await apiCall({ action:'deleteZoom', id });
     zoomSessions = zoomSessions.filter(s => s.id !== id);
     renderZoomList(); renderCalendar();
     showToast('🗑️ Đã xóa buổi học!');
@@ -395,7 +389,7 @@ async function addTask() {
   if (!deadline) { alert('Vui lòng chọn deadline!'); return; }
   setLoading(true);
   try {
-    const res = await apiPost({ action:'addTask', name, deadline });
+    const res = await apiCall({ action:'addTask', name, deadline });
     if (res.success) {
       tasks.push({ id: res.id, name, deadline, done: 'false' });
       tasks.sort((a,b) => a.deadline.localeCompare(b.deadline));
@@ -414,7 +408,7 @@ async function toggleTask(id) {
   const newDone = task.done === 'true' ? 'false' : 'true';
   setLoading(true);
   try {
-    await apiPost({ action:'toggleTask', id, done: newDone === 'true' });
+    await apiCall({ action:'toggleTask', id, done: newDone });
     task.done = newDone;
     renderTasks();
   } catch(e) { showToast('❌ Lỗi!'); }
@@ -424,7 +418,7 @@ async function toggleTask(id) {
 async function removeTask(id) {
   setLoading(true);
   try {
-    await apiPost({ action:'deleteTask', id });
+    await apiCall({ action:'deleteTask', id });
     tasks = tasks.filter(t => t.id !== id);
     renderTasks(); renderCalendar();
     showToast('🗑️ Đã xóa bài tập!');
@@ -463,7 +457,7 @@ async function clearAll() {
   if (!confirm('Bạn chắc chắn muốn xóa toàn bộ dữ liệu trên Google Sheets?')) return;
   setLoading(true);
   try {
-    await apiPost({ action:'clearAll' });
+    await apiCall({ action:'clearAll' });
     zoomSessions = []; tasks = [];
     renderZoomList(); renderTasks(); renderCalendar();
     showToast('🗑️ Đã xóa toàn bộ!');
