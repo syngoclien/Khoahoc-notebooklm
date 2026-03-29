@@ -278,7 +278,7 @@
 // ═══════════════════════════════════════════════════════════
 //  ⚙️  BƯỚC DUY NHẤT CẦN THAY: dán URL Apps Script vào đây
 // ═══════════════════════════════════════════════════════════
-const API_URL = 'https://script.google.com/macros/s/AKfycbx4fT1ovEf3LJZKXLcbGAI7DGM66Ke9MG7TSiTFKGbbDk0GyomghCBJFkLYOi7X4W413w/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyhYoJOH9Nfd11xP8X1k0G0fpDmyG12O2v1RRSXFeSVBN0R1m8KJYFBj8Pn9yL4enCy8A/exec';
 // Ví dụ: 'https://script.google.com/macros/s/AKfycbx.../exec'
 // ═══════════════════════════════════════════════════════════
 
@@ -300,11 +300,35 @@ function daysLeft(s){
   return Math.floor((d-t)/86400000);
 }
 
-// ── API calls — dùng GET để tránh CORS ───────────────────────
-async function apiCall(params) {
-  const url = API_URL + '?' + new URLSearchParams(params).toString();
-  const res = await fetch(url);
-  return res.json();
+// ── JSONP — bypass hoàn toàn CORS ────────────────────────────
+// Kỹ thuật này dùng thẻ <script> thay vì fetch, không bao giờ
+// bị CORS chặn dù trên bất kỳ domain nào.
+function apiCall(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = 'gs_cb_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+    const script  = document.createElement('script');
+
+    // Timeout 15 giây
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout'));
+    }, 15000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function(data) {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = () => { cleanup(); reject(new Error('Script error')); };
+    script.src = API_URL + '?' + new URLSearchParams({ ...params, callback: cbName }).toString();
+    document.head.appendChild(script);
+  });
 }
 
 // ── Loading state ─────────────────────────────────────────────
