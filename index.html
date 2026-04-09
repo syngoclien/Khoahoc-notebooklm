@@ -206,6 +206,10 @@
   .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--text);color:#fff;font-size:.875rem;font-weight:700;padding:12px 24px;border-radius:999px;box-shadow:0 8px 28px rgba(45,31,20,.25);z-index:500;opacity:0;transition:all .3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* CUSTOM LINK */
+  .custom-link{color:var(--teal);font-weight:700;text-decoration:none;border-bottom:1.5px solid rgba(61,173,160,.3);transition:all .2s;word-break:break-all;}
+  .custom-link:hover{color:#2f9a8e;border-bottom-color:var(--teal);}
+
   /* EMPTY */
   .empty-state{text-align:center;padding:28px;color:var(--text-muted);font-size:.875rem;border:1.5px dashed var(--border);border-radius:12px;background:rgba(253,246,240,.5);font-weight:600;}
 
@@ -475,16 +479,17 @@ import { getAuth, signInAnonymously }
 // ⚙️  FIREBASE CONFIG — điền thông tin của bạn vào đây
 // ════════════════════════════════════════════════════
 const firebaseConfig = {
-  apiKey: "AIzaSyCaSqFTiVPKcPNelTzq9lTbunriA_VWdC4",
-  authDomain: "khoahoc-notebooklm.firebaseapp.com",
-  databaseURL: "https://khoahoc-notebooklm-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "khoahoc-notebooklm",
-  storageBucket: "khoahoc-notebooklm.firebasestorage.app",
-  messagingSenderId: "806395888191",
-  appId: "1:806395888191:web:08688461edfd49f5e2ee8a"
+  apiKey:            "ĐIỀN_API_KEY",
+  authDomain:        "ĐIỀN_AUTH_DOMAIN",
+  databaseURL:       "ĐIỀN_DATABASE_URL",
+  projectId:         "ĐIỀN_PROJECT_ID",
+  storageBucket:     "ĐIỀN_STORAGE_BUCKET",
+  messagingSenderId: "ĐIỀN_MESSAGING_SENDER_ID",
+  appId:             "ĐIỀN_APP_ID"
 };
+
 // ── MẬT KHẨU ADMIN ────────────────────────────────
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = 'NotebookLM2025';
 // ════════════════════════════════════════════════════
 
 const isConfigured = !firebaseConfig.apiKey.includes('ĐIỀN');
@@ -755,6 +760,18 @@ function renderTasks(){
   }).join('');
 }
 
+// Tự động phát hiện URL và chuyển thành link bấm được
+function linkify(text) {
+  // Escape HTML trước để tránh XSS
+  const escaped = text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Tìm các URL (http/https) và bọc bằng thẻ <a>
+  return escaped.replace(
+    /(https?:\/\/[^\s<>"]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer" class="custom-link">$1</a>'
+  );
+}
+
 // CUSTOM SECTIONS
 function renderCustom(sec){
   const el    = document.getElementById('custom'+sec+'-list');
@@ -765,7 +782,7 @@ function renderCustom(sec){
   el.innerHTML = items.map(([id,v])=>`
     <div class="custom-item">
       <div class="custom-item-bullet" style="background:${colors}; box-shadow:0 0 7px ${colors}40;"></div>
-      <div class="custom-item-text">${v.text}</div>
+      <div class="custom-item-text">${linkify(v.text)}</div>
       ${window._isAdmin ? `<div class="item-actions">
         <button class="btn-edit" onclick="openEditCustom(${sec},'${id}')">✏️ Sửa</button>
         <button class="btn btn-ghost" onclick="removeCustomItem(${sec},'${id}')">✕</button>
